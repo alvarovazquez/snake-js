@@ -18,8 +18,8 @@ body {
 	font-family: 'Nokia cellphone';
 	font-size: 16pt;
 	display: block;
-	float: left;
 	clear: both;
+	margin: auto;
 	width: 385px;
 	padding-top: 5px;
 	border-top-left-radius: 2px;
@@ -37,6 +37,9 @@ body {
 	clear: both;
 	position: fixed;
 	bottom: 0;
+	left: 50%;
+	right: 50%;
+	margin-left: -192.5px;
 }
 
 #button-up,
@@ -104,9 +107,10 @@ body {
 	border-bottom-left-radius: 2px;
 	border-bottom-right-radius: 2px;
 	background-color: #20a120;
-	float: left;
 	clear: both;
 	width: 385px;
+	height: 385px;
+	margin: auto;
 }
 
 .playground .row {
