@@ -49,11 +49,19 @@ var snakeJs = (function () {
 	}
 
 	function _bindEvents() {
-		document.addEventListener("keydown", _keyDownHandler);
+		document.addEventListener('keydown', _keyDownHandler);
+		document.addEventListener('snake-js-change-direction-left', _changeDirectionLeft);
+		document.addEventListener('snake-js-change-direction-up', _changeDirectionUp);
+		document.addEventListener('snake-js-change-direction-right', _changeDirectionRight);
+		document.addEventListener('snake-js-change-direction-down', _changeDirectionDown);
 	}
 
 	function _unbindEvents() {
-		document.removeEventListener("keydown", _keyDownHandler);
+		document.removeEventListener('keydown', _keyDownHandler);
+		document.removeEventListener('snake-js-change-direction-left', _changeDirectionLeft);
+		document.removeEventListener('snake-js-change-direction-up', _changeDirectionUp);
+		document.removeEventListener('snake-js-change-direction-right', _changeDirectionRight);
+		document.removeEventListener('snake-js-change-direction-down', _changeDirectionDown);
 	}
 
 	function _moveUp() {
