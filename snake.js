@@ -299,6 +299,7 @@ var snakeJs = (function () {
 		score = 0;
 		squares = [];
 		snake = [];
+		movementInterval = SNAKE_MOVEMENT_INTERVAL;
 		movementIntervalId = undefined;
 
 		_drawPlayground();
