@@ -140,3 +140,9 @@ body {
 	border-radius: 50%;
 	background-color: #444;
 }
+
+@media (max-width: 768px) {
+	body {
+		margin: 0;
+	}
+}
