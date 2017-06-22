@@ -20,6 +20,13 @@ The game will trigger a few events:
  * `snake-js-end` when the game finishes. The event will have the final score in the `event.detail.score` property.
  * `snake-js-score-up` when the snake eats an apple, thus scoring a point.  The event will have the new score in the `event.detail.score` property.
 
+The game will also respond to some events:
+
+ * `snake-js-change-direction-up` will change the snake direction upwards. Same as pressing `arrow up` key.
+ * `snake-js-change-direction-down` will change the snake direction downwards. Same as pressing `arrow down` key.
+ * `snake-js-change-direction-left` will change the snake direction to the left. Same as pressing `arrow left` key.
+ * `snake-js-change-direction-right` will change the snake direction to the right. Same as pressing `arrow right` key.
+
 You can use these events, for example, for updating or resetting a scoreboard, or to show messages to the user.
 
 ## Demo
