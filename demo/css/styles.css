@@ -1,0 +1,64 @@
+@font-face {
+	font-family: 'Nokia cellphone';
+	src: url('../font/nokiafc22.woff2') format('woff2'),
+		 url('../font/nokiafc22.woff') format('woff');
+	font-weight: normal;
+	font-style: normal;
+}
+
+body {
+	background-color: #333;
+}
+
+.score {
+	font-family: 'Nokia cellphone';
+	font-size: 16pt;
+	display: block;
+	float: left;
+	clear: both;
+	width: 385px;
+	padding-top: 5px;
+	border-top-left-radius: 2px;
+	border-top-right-radius: 2px;
+	background-color: #53a120;
+	color: #222;
+	text-align: center;
+}
+
+.playground {
+	border: 5px solid #53a120;
+	border-bottom-left-radius: 2px;
+	border-bottom-right-radius: 2px;
+	background-color: #20a120;
+	float: left;
+	clear: both;
+	width: 375px;
+}
+
+.playground .row {
+	float: left;
+	clear: both;
+}
+
+.playground .row .square {
+	height: 15px;
+	width: 15px;
+	float: left;
+}
+
+.playground .row .square[data-type='snake'] {
+	background-color: #222;
+	border-top-left-radius: 1px;
+	border-top-right-radius: 3px;
+	border-bottom-left-radius: 3px;
+	border-bottom-right-radius: 1px;
+}
+
+.playground .row .square[data-type='snake'].dead {
+	border-radius: 0;
+}
+
+.playground .row .square[data-type='food'] {
+	border-radius: 50%;
+	background-color: #444;
+}
