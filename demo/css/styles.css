@@ -6,6 +6,10 @@
 	font-style: normal;
 }
 
+* {
+	box-sizing: border-box;
+}
+
 body {
 	background-color: #333;
 }
@@ -21,8 +25,78 @@ body {
 	border-top-left-radius: 2px;
 	border-top-right-radius: 2px;
 	background-color: #53a120;
-	color: #222;
+	color: #111;
 	text-align: center;
+}
+
+#buttons {
+	width: 385px;
+	height: 200px;
+	display: block;
+	float: left;
+	clear: both;
+	position: fixed;
+	bottom: 0;
+}
+
+#button-up,
+#button-down,
+#button-left,
+#button-right {
+	border-radius: 10px;
+	font-family: 'Nokia cellphone';
+	position: absolute;
+	border: 2px solid #333;
+	background-color: #555;
+	color: #111;
+	cursor: pointer;
+	text-align: center;
+}
+#button-up,
+#button-down {
+	left: 25%;
+	width: 50%;
+	height: 50%;
+	padding-top: 40px;
+}
+#button-left,
+#button-right {
+	top: 0;
+	width: 25%;
+	height: 100%;
+	padding-top: 90px;
+}
+#button-left {
+	left: 0;
+}
+#button-right {
+	right: 0;
+}
+#button-up {
+	top: 0;
+}
+#button-down {
+	bottom: 0;
+}
+
+#button-left:after {
+	content: 'left';
+}
+#button-right:after {
+	content: 'right';
+}
+#button-up:after {
+	content: 'up';
+}
+#button-down:after {
+	content: 'down';
+}
+
+#button-up:active,
+#button-down:active,
+#button-left:active,
+#button-right:active {
+	background-color: #444;
 }
 
 .playground {
@@ -32,7 +106,7 @@ body {
 	background-color: #20a120;
 	float: left;
 	clear: both;
-	width: 375px;
+	width: 385px;
 }
 
 .playground .row {
