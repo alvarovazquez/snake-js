@@ -1,55 +1,45 @@
 var snakeJs = (function () {
 	var snakeGame,
 
-		PLAYGROUND_WIDTH = 25,
-		PLAYGROUND_HEIGHT = 	PLAYGROUND_WIDTH,
+		GRID_WIDTH = 25,
+		GRID_HEIGHT = GRID_WIDTH,
+		GRID_TYPES = {
+			SQUARE: {
+				type: 'square'
+			},
+			SNAKE: {
+				type: 'snake',
+				subtypes: {
+					HEAD: 'alive',
+					TAIL: 'tail',
+					DEAD: 'dead'
+				}
+			},
+			FOOD: {
+				type: 'food'
+			}
+		},
 		SNAKE_INITIAL_SIZE = 1,
 		SNAKE_MOVEMENT_INTERVAL = 200,
 		SNAKE_MOVEMENT_INTERVAL_STEP = 10,
 		SNAKE_MOVEMENT_INTERVAL_MIN = 40,
-		SNAKE_INITIAL_POS_X = Math.floor(	PLAYGROUND_WIDTH / 2),
-		SNAKE_INITIAL_POS_Y = Math.floor(	PLAYGROUND_HEIGHT / 2),
+		SNAKE_INITIAL_POS_X = Math.floor(	GRID_WIDTH / 2),
+		SNAKE_INITIAL_POS_Y = Math.floor(	GRID_HEIGHT / 2),
 		SNAKE_DIRECTION_UP = 'up',
 		SNAKE_DIRECTION_DOWN = 'down',
 		SNAKE_DIRECTION_LEFT = 'left',
 		SNAKE_DIRECTION_RIGHT = 'right',
 
-		position = {
-			x: SNAKE_INITIAL_POS_X,
-			y: SNAKE_INITIAL_POS_Y
-		},
-		length = SNAKE_INITIAL_SIZE,
-		direction = SNAKE_DIRECTION_RIGHT,
-		score = 0,
-		squares = [],
-		snake = [],
-
+		grid,
+		snake,
+		headPosition,
+		tailLength,
+		direction,
+		score,
 		movementIntervalId,
-		movementInterval = SNAKE_MOVEMENT_INTERVAL,
-		movementMinInterval = SNAKE_MOVEMENT_INTERVAL_MIN;
-
-	function _keyDownHandler(event) {
-		switch (event.keyCode) {
-			case 37:
-				_changeDirectionLeft();
-				event.preventDefault();
-				break;
-			case 38:
-				_changeDirectionUp();
-				event.preventDefault();
-				break;
-			case 39:
-				_changeDirectionRight();
-				event.preventDefault();
-				break;
-			case 40:
-				_changeDirectionDown();
-				event.preventDefault();
-		}
-	}
+		movementInterval;
 
 	function _bindEvents() {
-		document.addEventListener('keydown', _keyDownHandler);
 		document.addEventListener('snake-js-change-direction-left', _changeDirectionLeft);
 		document.addEventListener('snake-js-change-direction-up', _changeDirectionUp);
 		document.addEventListener('snake-js-change-direction-right', _changeDirectionRight);
@@ -57,7 +47,6 @@ var snakeJs = (function () {
 	}
 
 	function _unbindEvents() {
-		document.removeEventListener('keydown', _keyDownHandler);
 		document.removeEventListener('snake-js-change-direction-left', _changeDirectionLeft);
 		document.removeEventListener('snake-js-change-direction-up', _changeDirectionUp);
 		document.removeEventListener('snake-js-change-direction-right', _changeDirectionRight);
@@ -65,39 +54,40 @@ var snakeJs = (function () {
 	}
 
 	function _moveUp() {
-		if (position.y > 1) {
-			position.y--;
+		if (headPosition.y > 0) {
+			headPosition.y--;
 		} else {
-			position.y = PLAYGROUND_HEIGHT;
+			headPosition.y = GRID_HEIGHT;
 		}
 	}
 
 	function _moveDown() {
-		if (position.y < PLAYGROUND_HEIGHT) {
-			position.y++;
+		if (headPosition.y < GRID_HEIGHT - 1) {
+			headPosition.y++;
 		} else {
-			position.y = 1;
+			headPosition.y = 0;
 		}
 	}
 
 	function _moveLeft() {
-		if (position.x > 1) {
-			position.x--;
+		if (headPosition.x > 0) {
+			headPosition.x--;
 		} else {
-			position.x = PLAYGROUND_WIDTH;
+			headPosition.x = GRID_WIDTH - 1;
 		}
 	}
 
 	function _moveRight() {
-		if (position.x < PLAYGROUND_WIDTH) {
-			position.x++;
+		if (headPosition.x < GRID_WIDTH - 1) {
+			headPosition.x++;
 		} else {
-			position.x = 1;
+			headPosition.x = 1;
 		}
 	}
 
 	function _move() {
-		var scoreUpEvent;
+		var scoreUpEvent,
+			levelUpEvent;
 
 		switch (direction) {
 			case SNAKE_DIRECTION_UP:
@@ -113,28 +103,37 @@ var snakeJs = (function () {
 				_moveRight();
 				break;
 			default:
-				_moveRight();
+				_end();
+				throw "Something went wrong! Snake is trying to move in a direction that does not exist :S";
 		}
 
 		if (!_checkCollision()) {
-			if (_checkEaten()) {
-				length++;
+			if (_checkFood()) {
+				_eat(headPosition);
+
+				tailLength++;
+
 				score++;
-				_drawFood();
-
-				if (score % 2 === 0 && movementInterval > SNAKE_MOVEMENT_INTERVAL_MIN) {
-					movementInterval -= SNAKE_MOVEMENT_INTERVAL_STEP;
-				}
-
 				scoreUpEvent = document.createEvent('customEvent');
 				scoreUpEvent.initCustomEvent('snake-js-score-up', true, true, { score: score });
 				document.dispatchEvent(scoreUpEvent);
+
+				if (score % 2 === 0 && movementInterval > SNAKE_MOVEMENT_INTERVAL_MIN) {
+					movementInterval -= SNAKE_MOVEMENT_INTERVAL_STEP;
+
+					levelUpEvent = document.createEvent('customEvent');
+					levelUpEvent.initCustomEvent('snake-js-level-up', true, true, {});
+					document.dispatchEvent(levelUpEvent);
+				}
+
+				_updateSnake();
+				_generateFood();
+			} else {
+				_updateSnake();
 			}
 
-			_startMovement();
-			_drawSnake();
+			_resetMovement();
 		} else {
-			_drawCollision();
 			_end();
 		}
 	}
@@ -171,7 +170,7 @@ var snakeJs = (function () {
 		}
 	}
 
-	function _startMovement() {
+	function _resetMovement() {
 		window.clearInterval(movementIntervalId);
 
 		movementIntervalId = window.setInterval(_move, movementInterval);
@@ -182,156 +181,203 @@ var snakeJs = (function () {
 	}
 
 	function _checkCollision() {
-		var i = 0;
-
-		for (; i < squares.length; i++) {
-			if (squares[i].getAttribute('data-type') === 'snake' &&
-				squares[i].getAttribute('data-row') == position.y &&
-				squares[i].getAttribute('data-col') == position.x) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	function _checkEaten() {
-		var i = 0;
-
-		for (; i < squares.length; i++) {
-			if (squares[i].getAttribute('data-type') === 'food' &&
-				squares[i].getAttribute('data-row') == position.y &&
-				squares[i].getAttribute('data-col') == position.x) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	function _drawPlayground() {
-		var body = document.getElementsByTagName('body')[0],
-			playground = document.getElementById('playground'),
-			row,
-			square,
-			i = 0,
-			j;
-
-		if (playground) {
-			playground.parentNode.removeChild(playground);
-		}
-
-		playground = document.createElement('div');
-		playground.setAttribute('id', 'playground');
-		playground.setAttribute('class', 'playground');
-
-		for (; i < PLAYGROUND_HEIGHT; i++) {
-			row = document.createElement('div');
-			row.setAttribute('class', 'row');
-
-			for (j = 0; j < PLAYGROUND_WIDTH; j++) {
-				square = document.createElement('div');
-				square.setAttribute('class', 'square');
-				square.setAttribute('data-row', i + 1);
-				square.setAttribute('data-col', j + 1);
-				square.setAttribute('data-type', 'square');
-
-				row.appendChild(square);
-
-				squares.push(square);
-			}
-
-			playground.appendChild(row);
-		}
-
-		body.appendChild(playground);
-	}
-
-	function _drawSnake() {
-		var i = 0;
-
-		if (snake.length === length) {
-			snake[0].setAttribute('data-type', 'square');
-			snake.shift();
-		}
-
-		for (; i < squares.length; i++) {
-			if (squares[i].getAttribute('data-row') == position.y && squares[i].getAttribute('data-col') == position.x) {
-				squares[i].setAttribute('data-type', 'snake');
-				snake.push(squares[i]);
-			}
-		}
-	}
-
-	function _drawFood() {
-		var xPos = Math.floor((Math.random() * PLAYGROUND_WIDTH) + 1),
-			yPos = Math.floor((Math.random() * PLAYGROUND_HEIGHT) + 1),
-			i = 0;
-
-		for (; i < squares.length; i++) {
-			if (squares[i].getAttribute('data-row') == yPos &&
-				squares[i].getAttribute('data-col') == xPos) {
-				if (squares[i].getAttribute('data-type') === 'snake') {
-					_drawFood();
-				} else {
-					squares[i].setAttribute('data-type', 'food');
-				}
-				break;
-			}
-		}
-	}
-
-	function _drawCollision() {
-		var i = 0;
+		var i = 1;
 
 		for (; i < snake.length; i++) {
-			snake[i].setAttribute('class', snake[i].getAttribute('class') + ' dead');
+			if (snake[i].position.x === headPosition.x &&
+				snake[i].position.y === headPosition.y) {
+				return true;
+			}
 		}
+
+		return false;
+	}
+
+	function _checkFood() {
+		if (grid[headPosition.y][headPosition.x].type === GRID_TYPES.FOOD.type) {
+			return true;
+		}
+
+		return false;
+	}
+
+	function _eat(position) {
+		var foodSquare = grid[position.y][position.x];
+
+		if (foodSquare.type === GRID_TYPES.FOOD.type) {
+			foodSquare.type = GRID_TYPES.SQUARE.type;
+		}
+	}
+
+	function _generateFood() {
+		var foodGeneratedEvent,
+			xPos = Math.floor(Math.random() * (GRID_WIDTH - 1)),
+			yPos = Math.floor(Math.random() * (GRID_HEIGHT - 1)),
+			i = 0;
+
+		for (; i < snake.length; i++) {
+			if (snake[i].position.x === xPos && snake[i].position.y === yPos) {
+				// Food was generated in a place where the snake already is.
+				// Recursively generate in a different place.
+				_generateFood();
+
+				return;
+			}
+		}
+
+		grid[yPos][xPos].type = GRID_TYPES.FOOD.type;
+
+		foodGeneratedEvent = document.createEvent('customEvent');
+		foodGeneratedEvent.initCustomEvent('snake-js-food-generated', true, true, {
+			position: {
+				x: xPos,
+				y: yPos,
+			},
+			type: GRID_TYPES.FOOD.type
+		});
+		document.dispatchEvent(foodGeneratedEvent);
+	}
+
+	function _updateSnake() {
+		var snakeUpdatedEvent,
+			i = 0;
+
+		if (snake.length === tailLength) {
+			snake.pop();
+		}
+
+		snake.unshift({
+			position: {
+				x: headPosition.x,
+				y: headPosition.y
+			}
+		});
+
+		snakeUpdatedEvent = document.createEvent('customEvent');
+		snakeUpdatedEvent.initCustomEvent('snake-js-snake-updated', true, true, { snake: snake });
+		document.dispatchEvent(snakeUpdatedEvent);
+	}
+
+	function _initValues() {
+		grid = [];
+		snake = [];
+		headPosition = {
+			x: SNAKE_INITIAL_POS_X,
+			y: SNAKE_INITIAL_POS_Y
+		};
+		tailLength = SNAKE_INITIAL_SIZE;
+		direction = SNAKE_DIRECTION_RIGHT;
+
+		movementInterval = SNAKE_MOVEMENT_INTERVAL;
+		movementIntervalId = undefined;
+
+		score = 0;
+	}
+
+	function _initGrid() {
+		var i = 0,
+			j;
+
+		grid = [];
+
+		for (; i < GRID_HEIGHT; i++) {
+			grid.push([]);
+			for (j = 0; j < GRID_WIDTH; j++) {
+				grid[i].push({
+					type: GRID_TYPES.SQUARE.type
+				});
+			}
+		}
+	}
+
+	function _initSnake() {
+		var i = 1;
+
+		snake = [];
+
+		snake[0] = {
+			position: {
+				x: SNAKE_INITIAL_POS_X,
+				y: SNAKE_INITIAL_POS_Y
+			},
+			type: GRID_TYPES.SNAKE.subtypes.HEAD
+		};
+		// TODO Take into account if snake tail is too long
+		for (; i < tailLength; i++) {
+			snake[i] = {
+				position: {
+					x: snake[0].x - 1,
+					y: snake[0].y
+				},
+				type: GRID_TYPES.SNAKE.subtypes.TAIL
+			};
+		}
+	}
+
+	function _initFood() {
+		_generateFood();
+	}
+
+	function _initMovement() {
+		_resetMovement();
 	}
 
 	function _init() {
-		_drawPlayground();
+		var initEvent = document.createEvent('customEvent'),
+			initData;
+
+		_bindEvents();
+
+		_initValues();
+		_initGrid();
+		_initSnake();
+
+		// TODO return a copy of the game data instead of original one?
+		initData = {
+			snake: snake,
+			grid: grid
+		};
+
+		initEvent.initCustomEvent('snake-js-init', true, true, initData);
+		document.dispatchEvent(initEvent);
+
+		return initData;
 	}
 
 	function _start() {
 		var startEvent = document.createEvent('customEvent');
 
+		_initFood();
+		_initMovement();
+
 		startEvent.initCustomEvent('snake-js-start', true, true, {});
-
-		position = {
-			x: SNAKE_INITIAL_POS_X,
-			y: SNAKE_INITIAL_POS_Y
-		};
-		length = SNAKE_INITIAL_SIZE;
-		direction = SNAKE_DIRECTION_RIGHT;
-		score = 0;
-		squares = [];
-		snake = [];
-		movementInterval = SNAKE_MOVEMENT_INTERVAL;
-		movementIntervalId = undefined;
-
-		_drawPlayground();
-		_bindEvents();
-		_drawSnake();
-		_drawFood();
-		_startMovement();
-
 		document.dispatchEvent(startEvent);
+	}
+
+	function _pause() {
+		// TODO Next feature to add
+		throw "Feature not implemented yet";
 	}
 
 	function _end() {
 		var endEvent = document.createEvent('customEvent');
 
-		endEvent.initCustomEvent('snake-js-end', true, true, { score: score });
-
 		_stopMovement();
+
 		_unbindEvents();
 
+		endEvent.initCustomEvent('snake-js-end', true, true, { score: score });
 		document.dispatchEvent(endEvent);
 	}
 
 	snakeGame = {
-		start: _start
+		init: _init,
+		start: _start,
+		pause: _pause,
+		changeDirectionUp: _changeDirectionUp,
+		changeDirectionDown: _changeDirectionDown,
+		changeDirectionLeft: _changeDirectionLeft,
+		changeDirectionRight: _changeDirectionRight
 	};
 
 	return snakeGame;
