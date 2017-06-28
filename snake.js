@@ -57,7 +57,7 @@ var snakeJs = (function () {
 		if (headPosition.y > 0) {
 			headPosition.y--;
 		} else {
-			headPosition.y = GRID_HEIGHT;
+			headPosition.y = GRID_HEIGHT - 1;
 		}
 	}
 
